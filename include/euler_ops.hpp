@@ -121,7 +121,7 @@ struct EulerContext {
 
                 edges.erase(e);
 
-                return;
+                return l_ptr;
             }
             he = he->next;
         } while (he != loop->edge->child);
