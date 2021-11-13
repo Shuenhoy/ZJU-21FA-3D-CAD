@@ -27,7 +27,6 @@ struct HalfEdgeStructure {
     struct Loop;
     struct HalfEdge;
     struct Vertex;
-    struct Edge;
 
     struct Solid {
         Face *child;
@@ -47,7 +46,7 @@ struct HalfEdgeStructure {
         }
     };
     struct Loop {
-        Edge *child;
+        HalfEdge *child;
         Loop *prev, *next;
 
         template <typename... T>
@@ -56,20 +55,9 @@ struct HalfEdgeStructure {
         }
     };
 
-    struct Edge {
-        HalfEdge *child;
-        Edge *prev, *next;
-
-        template <typename... T>
-        static std::unique_ptr<Edge> create(T &&...ts) {
-            return std::make_unique<Edge>(std::forward<T>(ts)...);
-        }
-    };
-
     struct HalfEdge {
         Vertex *vertex;
         Loop *loop;
-        Edge *edge;
         HalfEdge *next;
         HalfEdge *prev;
         HalfEdge *twin;
@@ -103,6 +91,17 @@ struct HalfEdgeStructure {
         n2->prev = n1;
     }
 
+    static bool is_halfedge_in_loop(Loop *loop, HalfEdge *he) {
+        auto he_it = loop->child;
+        do {
+            if (he_it == he) {
+                return true;
+            }
+            he_it = he_it->next;
+        } while (he_it != loop->child);
+        return false;
+    }
+
     template <LinkedListChild T>
     static void linked_insert_sibling(T *n1, T *n2) {
         T *n1next = n1->next;
@@ -110,30 +109,36 @@ struct HalfEdgeStructure {
         n2->prev  = n1;
         n2->next  = n1next;
     }
+
+    static HalfEdge *vertex_halfedge_in_loop(Loop *loop, Vertex *vertex) {
+        HalfEdge *e = loop->child;
+        do {
+            if (e->vertex == vertex) {
+                return e;
+            }
+            e = e->next;
+        } while (e != loop->child);
+        throw std::runtime_error("vertex_halfedge_in_loop: vertex not in loop");
+    }
     static void insert_edge_to_loop(Loop *loop,
-                                    Edge *edge) {
+                                    HalfEdge *he1, // he1->vertex on loop
+                                    HalfEdge *he2) {
 
         if (loop->child == nullptr) {
-            loop->child = edge;
-            edge->prev  = edge;
-            edge->next  = edge;
+            loop->child = he1;
 
-            connect(edge->child, edge->child->twin);
-            connect(edge->child->twin, edge->child);
+            connect(he1, he2);
+            connect(he2, he1);
 
         } else {
-            Vertex *start = edge->child->vertex;
+            Vertex *start = he1->vertex;
             HalfEdge *he  = loop->child->child;
             do {
                 if (he->vertex == start) {
-                    edge->prev           = he->prev->edge;
-                    he->prev->edge->next = edge;
-                    edge->next           = he->edge;
-                    he->edge->prev       = edge;
 
-                    connect_he(he->prev, edge->child);
-                    connect_he(edge->child, edge->child->twin);
-                    connect_he(edge->child->twin, he);
+                    connect_he(he->prev, he1);
+                    connect_he(he1, he2);
+                    connect_he(he2, he);
 
                     return;
                 }

@@ -20,7 +20,6 @@ struct EulerContext {
     using Vertex   = typename HF::Vertex;
     using HalfEdge = typename HF::HalfEdge;
     using Loop     = typename HF::Loop;
-    using Edge     = typename HF::Edge;
 
     template <typename T>
     using PtrSet = std::unordered_set<std::unique_ptr<T>, IdentityHash, PointerEqual>;
@@ -30,7 +29,6 @@ struct EulerContext {
     PtrSet<Vertex> vertices;
     PtrSet<HalfEdge> halfedges;
     PtrSet<Loop> loops;
-    PtrSet<Edge> edges;
 
     std::tuple<Solid *, Vertex *, Face *>
     mvfs(RefTo<Vdata> auto &&vdata) {
@@ -48,7 +46,7 @@ struct EulerContext {
         return std::make_tuple(s_ptr, v_ptr, f_ptr);
     }
 
-    std::tuple<Vertex *, Edge *> mev(
+    Vertex *mev(
         RefTo<Vdata> auto &&vdata,
         Vertex *v1_ptr,
         Loop *loop) {
@@ -63,14 +61,10 @@ struct EulerContext {
         he1_ptr->vertex = v1_ptr;
         he2_ptr->vertex = v2_ptr;
 
-        Edge *e_ptr     = edges.insert(Edge::create()).first->get();
-        e_ptr->halfedge = he1_ptr;
-        he1_ptr->edge   = e_ptr;
-        he2_ptr->edge   = e_ptr;
-        HF::insert_edge_to_loop(loop, e_ptr);
+        HF::insert_edge_to_loop(loop, he1_ptr, he2_ptr);
     }
 
-    std::tuple<Edge *, Face *> mef(
+    Face *mef(
         Vertex *v1,
         Vertex *v2,
         Loop *loop) {
@@ -79,53 +73,51 @@ struct EulerContext {
         HalfEdge *he1_ptr = halfedges.insert(std::move(he1)).first->get();
         HalfEdge *he2_ptr = halfedges.insert(std::move(he2)).first->get();
 
-        HalfEdge *v1_prev = v1->halfedge->twins;
-        HalfEdge *v1_next = v1_prev->twins;
-        HalfEdge *v2_prev = v2->halfedge->twins;
-        HalfEdge *v2_next = v2_prev->twins;
+        Face *nface = faces.insert(Face::create()).first->get();
+        Loop *nloop = loops.insert(Loop::create()).first->get();
+        HF::linked_insert(nface, nloop);
+
+        HalfEdge *v1_next = HF::vertex_halfedge_in_loop(v1, loop);
+        HalfEdge *v1_prev = v1_next->prev;
+
+        HalfEdge *v2_next = HF::vertex_halfedge_in_loop(v2, loop);
+        HalfEdge *v2_prev = v2_next->prev;
 
         he1_ptr->vertex = v1;
         he2_ptr->vertex = v2;
 
-        Edge *e_ptr     = edges.insert(Edge::create()).first->get();
-        e_ptr->halfedge = he1_ptr;
-        he1_ptr->edge   = e_ptr;
-        he2_ptr->edge   = e_ptr;
+        HF::connect(v1_prev, he1_ptr);
+        HF::connect(he1_ptr, v2_next);
+        HF::connect(v2_prev, he2_ptr);
+        HF::connect(he2_ptr, v1_next);
 
-        v1_prev->next = he1_ptr;
-        he1_ptr->next = v2_next;
-        v2_next->prev = he2_ptr;
-        he2_ptr->prev = v1_next;
+        if (HF::is_halfedge_in_loop(loop, he1_ptr)) {
+            nloop->halfedge = he2_ptr;
+        } else {
+            nloop->halfedge = he1_ptr;
+        }
+        return nface;
     }
 
     Loop *kemr(Vertex &v1, Vertex *v2, Loop *loop) {
     }
-    Loop *kemr(Edge *e, Loop *loop) { // kill an edge and make a loop
-        HalfEdge *he = loop->edge->child;
-        do {
-            if (he->vertex == e->child->vertex ||
-                he->vertex == e->child->twins->vertex) {
+    Loop *kemr(HalfEdge *he, Loop *loop) { // kill an edge and make a loop
+        assert(HF::is_halfedge_in_loop(loop, he));
 
-                HalfEdge *this_prev = he->prev;
-                HalfEdge *this_next = he->twin->next;
-                HalfEdge *that_next = he->next;
-                HalfEdge *that_prev = he->twin->prev;
+        HalfEdge *this_prev = he->prev;
+        HalfEdge *this_next = he->twin->next;
+        HalfEdge *that_next = he->next;
+        HalfEdge *that_prev = he->twin->prev;
 
-                HF::connect(this_prev, this_next);
-                HF::connect(that_prev, that_next);
+        HF::connect(this_prev, this_next);
+        HF::connect(that_prev, that_next);
 
-                Loop *l_ptr = loops.insert(Loop::create()).first->get();
-                l_ptr->edge = that_next->edge;
+        Loop *l_ptr     = loops.insert(Loop::create()).first->get();
+        l_ptr->halfedge = this_next;
+        loop->halfedge  = that_next;
+        HF::linked_insert_sibling(loop, l_ptr);
 
-                HF::linked_insert_sibling(loop, l_ptr);
-
-                edges.erase(e);
-
-                return l_ptr;
-            }
-            he = he->next;
-        } while (he != loop->edge->child);
-        throw std::runtime_error("kemr: edge not found in loop");
+        return l_ptr;
     }
     void kfmrh(Face *f1, Face *f2) {
         HF::linked_insert(f1, f2->loop);
