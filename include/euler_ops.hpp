@@ -46,7 +46,7 @@ struct EulerContext {
         return std::make_tuple(s_ptr, v_ptr, f_ptr);
     }
 
-    Vertex *mev(
+    std::tuple<Vertex *, HalfEdge *> mev(
         RefTo<Vdata> auto &&vdata,
         Vertex *v1_ptr,
         Loop *loop) {
@@ -62,9 +62,12 @@ struct EulerContext {
         he2_ptr->vertex = v2_ptr;
 
         HF::insert_edge_to_loop(loop, he1_ptr, he2_ptr);
+
+        return {v2_ptr, he1_ptr};
     }
 
-    Face *mef(
+    std::tuple<Face *, HalfEdge *> mef(
+        Solid *solid,
         Vertex *v1,
         Vertex *v2,
         Loop *loop) {
@@ -91,12 +94,11 @@ struct EulerContext {
         HF::connect(v2_prev, he2_ptr);
         HF::connect(he2_ptr, v1_next);
 
-        if (HF::is_halfedge_in_loop(loop, he1_ptr)) {
-            nloop->halfedge = he2_ptr;
-        } else {
-            nloop->halfedge = he1_ptr;
-        }
-        return nface;
+        nloop->halfedge = he2_ptr;
+        loop->halfedge  = he1_ptr;
+
+        HF::linked_insert(solid, nface);
+        return {nface, he1_ptr};
     }
 
     Loop *kemr(Vertex &v1, Vertex *v2, Loop *loop) {
@@ -112,12 +114,12 @@ struct EulerContext {
         HF::connect(this_prev, this_next);
         HF::connect(that_prev, that_next);
 
-        Loop *l_ptr     = loops.insert(Loop::create()).first->get();
-        l_ptr->halfedge = this_next;
-        loop->halfedge  = that_next;
-        HF::linked_insert_sibling(loop, l_ptr);
+        Loop *nloop     = loops.insert(Loop::create()).first->get();
+        loop->halfedge  = this_next;
+        nloop->halfedge = that_next;
+        HF::linked_insert_sibling(loop, nloop);
 
-        return l_ptr;
+        return nloop;
     }
     void kfmrh(Face *f1, Face *f2) {
         HF::linked_insert(f1, f2->loop);

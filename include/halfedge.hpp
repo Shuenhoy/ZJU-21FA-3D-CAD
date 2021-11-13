@@ -57,7 +57,6 @@ struct HalfEdgeStructure {
 
     struct HalfEdge {
         Vertex *vertex;
-        Loop *loop;
         HalfEdge *next;
         HalfEdge *prev;
         HalfEdge *twin;
