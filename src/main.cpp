@@ -13,16 +13,11 @@
 
 using Sweeping = brep_sweep::Sweepping<Eigen::Vector3d>;
 
-// one arg: filename
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
-        return 1;
-    }
-    std::ifstream fin(argv[1]);
+auto read_loops(const std::string &filename) {
+    std::ifstream fin(filename);
     if (!fin) {
-        std::cerr << "Could not open file " << argv[1] << std::endl;
-        return 1;
+        std::cerr << "Could not open file " << filename << std::endl;
+        exit(1);
     }
 
     int num_loops = 0;
@@ -43,7 +38,10 @@ int main(int argc, char **argv) {
         }
         loops.emplace_back(std::move(vertices));
     }
+    return loops;
+}
 
+auto sweep_faces(auto loops) {
     auto context           = Sweeping::init();
     auto [bot, top, solid] = Sweeping::create_outer_loop(context, loops[0]);
     auto outer             = bot->child;
@@ -52,17 +50,17 @@ int main(int argc, char **argv) {
     std::vector<decltype(bot)> inner_faces;
     hf_loops.push_back(outer);
 
-    for (int i = 1; i < num_loops; i++) {
+    for (int i = 1; i < loops.size(); i++) {
         // create inner loops
         auto inner = Sweeping::create_inner_loop(context, solid, loops[i], outer);
         hf_loops.push_back(inner->child);
         inner_faces.push_back(inner);
     }
 
-    for (int i = 0; i < num_loops; i++) {
+    for (int i = 0; i < loops.size(); i++) {
         Sweeping::sweeping(context, solid, hf_loops[i], Eigen::Vector3d(0.0, 0.0, 1.0));
     }
-    for (int i = 1; i < num_loops; i++) {
+    for (int i = 1; i < loops.size(); i++) {
         context.kfmrh(top, inner_faces[i - 1]);
     }
     auto faces = Sweeping::collect_faces(solid);
@@ -78,6 +76,17 @@ int main(int argc, char **argv) {
             std::cout << "-------------" << std::endl;
         }
     }
+
+    return faces;
+}
+
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
+        return 1;
+    }
+    auto loops = read_loops(argv[1]);
+    auto faces = sweep_faces(loops);
 
     const Eigen::MatrixXd V = (Eigen::MatrixXd(8, 3) << 0.0, 0.0, 0.0,
                                0.0, 0.0, 1.0,
