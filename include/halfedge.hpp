@@ -11,13 +11,13 @@ namespace brep_sweep {
 
 template <typename T, typename U>
 concept LinkedListParent = requires(T *t, U *u) {
-    { t->child } -> std::same_as<U *>;
+    { t->child } -> std::convertible_to<U *>;
 };
 
 template <typename U>
 concept LinkedListChild = requires(U *u) {
-    { u->prev } -> std::same_as<U *>;
-    { u->next } -> std::same_as<U *>;
+    { u->prev } -> std::convertible_to<U *>;
+    { u->next } -> std::convertible_to<U *>;
 };
 
 template <typename Vdata>
@@ -79,6 +79,8 @@ struct HalfEdgeStructure {
         HalfEdge *edge;
         Vdata data;
 
+        Vertex(Vdata data) : data(data) {}
+
         template <typename... T>
         static std::unique_ptr<Vertex> create(T &&...ts) {
             return std::make_unique<Vertex>(std::forward<T>(ts)...);
@@ -131,18 +133,18 @@ struct HalfEdgeStructure {
 
         } else {
             Vertex *start = he1->vertex;
-            HalfEdge *he  = loop->child->child;
+            HalfEdge *he  = loop->child;
             do {
                 if (he->vertex == start) {
 
-                    connect_he(he->prev, he1);
-                    connect_he(he1, he2);
-                    connect_he(he2, he);
+                    connect(he->prev, he1);
+                    connect(he1, he2);
+                    connect(he2, he);
 
                     return;
                 }
                 he = he->next;
-            } while (he != loop->child->child);
+            } while (he != loop->child);
             throw std::runtime_error("insert_edge_to_loop: vertex not in loop");
         }
     }
