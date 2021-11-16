@@ -31,10 +31,10 @@ struct EulerContext {
     PtrSet<Loop> loops;
 
     std::tuple<Solid *, Vertex *, Face *>
-    mvfs(RefTo<Vdata> auto vdata) {
+    mvfs(RefTo<Vdata> auto &&vdata) {
 
         Vertex *v_ptr = vertices.insert(
-                                    Vertex::create(std::forward<Vdata>(vdata)))
+                                    Vertex::create(std::forward<const Vdata>(vdata)))
                             .first->get();
         Face *f_ptr  = faces.insert(Face::create()).first->get();
         Solid *s_ptr = solids.insert(Solid::create()).first->get();
@@ -47,12 +47,11 @@ struct EulerContext {
     }
 
     std::tuple<Vertex *, HalfEdge *> mev(
-        RefTo<Vdata> auto vdata,
+        RefTo<Vdata> auto &&vdata,
         Vertex *v1_ptr,
         Loop *loop) {
-
         Vertex *v2_ptr = vertices.insert(
-                                     Vertex::create(std::forward<Vdata>(vdata)))
+                                     Vertex::create(std::forward<const Vdata>(vdata)))
                              .first->get();
         auto [he1, he2]   = HalfEdge::create_twins();
         HalfEdge *he1_ptr = halfedges.insert(std::move(he1)).first->get();
