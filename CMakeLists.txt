@@ -39,13 +39,23 @@ CPMAddPackage(
     "LIBIGL_WITH_PYTHON OFF"
 )
 
+CPMAddPackage(
+  NAME "clip2tri"
+  GIT_REPOSITORY "https://github.com/raptor/clip2tri.git"
+  GIT_TAG "f62a734d22733814b8a970ed8a68a4d94c24fa5f"
+  OPTIONS
+    "BUILD_SHARED_LIBS OFF"
+)
+
 
 add_executable(brep_sweep src/main.cpp)
 
 target_link_libraries(brep_sweep 
-  Eigen3::Eigen
-  igl::core igl::opengl_glfw
-  )
+  PUBLIC
+    Eigen3::Eigen
+    igl::core igl::opengl_glfw
+    clip2tri-static
+)
 target_include_directories(brep_sweep PUBLIC include)
 target_precompile_headers(brep_sweep PRIVATE 
     <Eigen/Core>)
