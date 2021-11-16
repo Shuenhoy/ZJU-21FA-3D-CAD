@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cassert>
-#include <vector>
 #ifndef SWEEPING_HPP__
 #define SWEEPING_HPP__
 
@@ -9,7 +7,9 @@
 #include "halfedge.hpp"
 
 #include <Eigen/Core>
-
+#include <cassert>
+#include <vector>
+#include <iostream>
 namespace brep_sweep {
 template <typename Vec = Eigen::Vector3d>
 struct Sweepping {
@@ -36,13 +36,16 @@ struct Sweepping {
             he = next;
         } while (he != loop->child);
         assert(old_vertices.size() >= 3);
+        std::cout << old_vertices.size() << std::endl;
+        std::vector<Vertex *> new_vertices;
 
         for (auto &v : old_vertices) {
-            context.mev(v->data + dir, v, loop);
+            auto [nv, _] = context.mev(v->data + dir, v, loop);
+            new_vertices.push_back(nv);
         }
-        for (int i = 0; i < old_vertices.size(); i++) {
-            Vertex *v      = old_vertices[i];
-            Vertex *v_next = old_vertices[(i + 1) % old_vertices.size()];
+        for (int i = 0; i < new_vertices.size(); i++) {
+            Vertex *v      = new_vertices[i];
+            Vertex *v_next = new_vertices[(i + 1) % new_vertices.size()];
             context.mef(solid, v, v_next, loop);
         }
     }

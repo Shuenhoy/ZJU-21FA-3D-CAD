@@ -22,10 +22,30 @@ CPMAddPackage(
     "EIGEN_BUILD_PKGCONFIG OFF"
 )
 
+CPMAddPackage(
+  NAME "libigl"
+  GIT_REPOSITORY "https://github.com/libigl/libigl.git"
+  GIT_TAG "v2.3.0"
+  OPTIONS
+    "LIBIGL_USE_STATIC_LIBRARY OFF"
+    "LIBIGL_WITH_COMISO OFF"
+    "LIBIGL_WITH_EMBREE OFF"
+    "LIBIGL_WITH_PNG OFF"
+    "LIBIGL_WITH_PNG OFF"
+    "LIBIGL_WITH_TRIANGLE OFF"
+    "LIBIGL_WITH_PREDICATES OFF"
+    "LIBIGL_WITH_TETGEN OFF"
+    "LIBIGL_WITH_XML OFF"
+    "LIBIGL_WITH_PYTHON OFF"
+)
+
 
 add_executable(brep_sweep src/main.cpp)
 
-target_link_libraries(brep_sweep Eigen3::Eigen)
+target_link_libraries(brep_sweep 
+  Eigen3::Eigen
+  igl::core igl::opengl_glfw
+  )
 target_include_directories(brep_sweep PUBLIC include)
 target_precompile_headers(brep_sweep PRIVATE 
     <Eigen/Core>)
