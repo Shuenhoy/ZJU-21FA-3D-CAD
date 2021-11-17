@@ -14,7 +14,7 @@
 
 #include <igl/opengl/glfw/Viewer.h>
 
-using Sweeping = brep_sweep::Sweepping<Eigen::Vector3d>;
+using Sweeping = brep_sweep::Sweepping;
 
 auto read_loops(const std::string &filename) {
     std::ifstream fin(filename);
@@ -26,27 +26,27 @@ auto read_loops(const std::string &filename) {
     int num_loops = 0;
     fin >> num_loops;
     assert(num_loops >= 1);
-    std::vector<std::vector<Eigen::Vector3d>> loops;
+    std::vector<std::vector<Eigen::Vector2d>> loops;
     for (int i = 0; i < num_loops; i++) {
         int num_vertices = 0;
         fin >> num_vertices;
         assert(num_vertices >= 3);
-        std::vector<Eigen::Vector3d> vertices;
+        std::vector<Eigen::Vector2d> vertices;
         vertices.reserve(num_vertices);
 
         for (int j = 0; j < num_vertices; j++) {
             double x = 0, y = 0;
             fin >> x >> y;
-            vertices.emplace_back(x, y, 0.0);
+            vertices.emplace_back(x, y);
         }
         loops.emplace_back(std::move(vertices));
     }
     return loops;
 }
 
-auto sweep_faces(auto loops) {
+auto sweep_faces(auto loops, brep_sweep::Expression &expr, double step_length, size_t num_steps) {
     auto context           = Sweeping::init();
-    auto [bot, top, solid] = Sweeping::create_outer_loop(context, loops[0]);
+    auto [bot, top, solid] = Sweeping::create_outer_loop(context, loops[0], expr);
     auto outer             = bot->child;
 
     std::vector<decltype(outer)> hf_loops;
@@ -55,25 +55,22 @@ auto sweep_faces(auto loops) {
 
     for (int i = 1; i < loops.size(); i++) {
         // create inner loops
-        auto inner = Sweeping::create_inner_loop(context, solid, loops[i], outer);
+        auto inner = Sweeping::create_inner_loop(context, solid, loops[i], outer, expr);
         hf_loops.push_back(inner->child);
         inner_faces.push_back(inner);
     }
     for (int i = 1; i < loops.size(); i++) {
         context.kfmrh(top, inner_faces[i - 1]);
     }
-    auto loop = bot->child;
-    do {
-        Sweeping::sweeping(context, solid, loop, Eigen::Vector3d(0.5, 0.0, 1.0));
+    for (int i = 1; i <= num_steps; i++) {
+        double z  = i * step_length;
+        auto loop = bot->child;
+        do {
+            Sweeping::sweeping(context, solid, loop, z, expr);
 
-        loop = loop->next;
-    } while (loop != bot->child);
-    loop = bot->child;
-    do {
-        Sweeping::sweeping(context, solid, loop, Eigen::Vector3d(0.0, 0.5, 1.0));
-
-        loop = loop->next;
-    } while (loop != bot->child);
+            loop = loop->next;
+        } while (loop != bot->child);
+    }
 
     auto faces = Sweeping::collect_faces(solid);
     std::cout << "solid with " << faces.size() << " faces" << std::endl;
@@ -93,12 +90,32 @@ auto sweep_faces(auto loops) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 3) {
-        std::cerr << "Usage: " << argv[0] << " <face_file> <sweep_file>" << std::endl;
+    if (argc != 5) {
+        std::cerr << "Usage: " << argv[0] << " <face_file> <sweep_file> <step_length> <step>" << std::endl;
         return 1;
     }
     auto loops = read_loops(argv[1]);
-    auto faces = sweep_faces(loops);
+
+    // read all text from argv[2]
+    std::string expr;
+    {
+        std::ifstream fin(argv[2]);
+        if (!fin) {
+            std::cerr << "Could not open file " << argv[2] << std::endl;
+            exit(1);
+        }
+        std::stringstream buffer;
+        buffer << fin.rdbuf();
+        expr = buffer.str();
+    }
+
+    auto step_length = std::stod(argv[3]);
+    auto step        = std::stoi(argv[4]);
+
+    brep_sweep::Expression sweep_brep(expr);
+
+    auto faces = sweep_faces(loops, sweep_brep, step_length, step);
+
     std::vector<Eigen::Vector3d> vertices;
     for (const auto &face : faces) {
         brep_sweep::triangulate(face, vertices);

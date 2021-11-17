@@ -1,0 +1,5 @@
+var affine[6] := {
+    cos(z), -sin(z),
+    sin(z), cos(z),
+    0.0, 0.0
+}

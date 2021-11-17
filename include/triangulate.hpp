@@ -25,7 +25,7 @@ inline Eigen::Vector2d under_basis(const Eigen::Vector3d &vec, const Eigen::Vect
     return Eigen::Vector2d{(vec - origin).dot(basis.col(0)), (vec - origin).dot(basis.col(1))};
 }
 
-inline Eigen::Vector3d from_basis(const Eigen::Vector3d &vec, const Eigen::Vector3d &origin, const Eigen::Matrix<double, 3, 2> &basis) {
+inline Eigen::Vector3d from_basis(const Eigen::Vector2d &vec, const Eigen::Vector3d &origin, const Eigen::Matrix<double, 3, 2> &basis) {
     return basis.col(0) * vec(0) + basis.col(1) * vec(1) + origin;
 }
 
@@ -58,7 +58,7 @@ inline void triangulate(
     clip2tri.triangulate(inner, outputTriangles, outer);
 
     for (const auto &i : outputTriangles) {
-        result.emplace_back(from_basis(Eigen::Vector3d(i.x, i.y, 0.0), origin, basis));
+        result.emplace_back(from_basis(Eigen::Vector2d{i.x, i.y}, origin, basis));
     }
 }
 

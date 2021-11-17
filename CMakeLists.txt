@@ -53,10 +53,10 @@ CPMAddPackage(
   NAME "exprtk"
   GIT_REPOSITORY "https://github.com/ArashPartow/exprtk.git"
   GIT_TAG "93a9f44f99b910bfe07cd1e933371e83cea3841c"
-  PATCH_COMMAND git restore . && git apply ${CMAKE_CURRENT_SOURCE_DIR}/exprtk.patch && echo "patch applied"
+  PATCH_COMMAND git clean -f && git restore . && git apply ${CMAKE_CURRENT_SOURCE_DIR}/exprtk.patch && echo "patch applied"
 )
 
-add_executable(brep_sweep src/main.cpp src/sweep_expr.hpp)
+add_executable(brep_sweep src/main.cpp src/sweep_expr.cpp)
 
 target_link_libraries(brep_sweep 
   PUBLIC

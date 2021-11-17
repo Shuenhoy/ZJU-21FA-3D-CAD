@@ -28,7 +28,7 @@ struct Expression {
     Expression(Expression &&) noexcept;
     ~Expression();
 
-    Eigen::Vector2d eval(double z, double x, double y);
+    Eigen::Vector3d eval(double z, double x, double y);
 };
 
 } // namespace brep_sweep

@@ -1,4 +1,5 @@
 #include <exprtk.hpp>
+#include <iostream>
 #include <sweep_expr.hpp>
 using T              = double;
 using symbol_table_t = exprtk::symbol_table<T>;
@@ -14,16 +15,17 @@ Expression::Expression(const std::string &expr) {
     symbol_table.add_variable("z", *z);
     affine.resize(6);
 
-    symbol_table.add_variable("__affine", affine.front());
+    symbol_table.add_vector("output_affine", affine);
     symbol_table.add_constants();
     expression->register_symbol_table(symbol_table);
     parser_t parser;
 
-    if (!parser.compile(expr + ";__affine := affine", *expression)) {
+    if (!parser.compile(expr + ";output_affine := affine", *expression)) {
+        std::cerr << parser.error() << std::endl;
         exit(1);
     }
 }
-Eigen::Vector2d Expression::eval(double z, double x, double y) {
+Eigen::Vector3d Expression::eval(double z, double x, double y) {
     *this->z = z;
     expression->value();
     Eigen::Matrix2d affine_matrix{
@@ -32,7 +34,7 @@ Eigen::Vector2d Expression::eval(double z, double x, double y) {
 
     Eigen::Vector2d point{x, y};
     Eigen::Vector2d result = affine_matrix * point + affine_vector;
-    return result;
+    return {result.x(), result.y(), z};
 }
 Expression::~Expression()                      = default;
 Expression::Expression(Expression &&) noexcept = default;
