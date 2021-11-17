@@ -11,6 +11,8 @@
 
 #include <igl/opengl/glfw/Viewer.h>
 
+#include "clip2tri/clip2tri.h"
+
 using Sweeping = brep_sweep::Sweepping<Eigen::Vector3d>;
 
 auto read_loops(const std::string &filename) {
@@ -80,6 +82,72 @@ auto sweep_faces(auto loops) {
     return faces;
 }
 
+Eigen::Matrix<double, 3, 2> find_basis(const std::vector<Eigen::Vector3d> &loop) {
+    Eigen::Vector3d base1 = (loop[1] - loop[0]).normalized();
+    for (int i = 1; i < loop.size(); i++) {
+        Eigen::Vector3d vec2 = loop[(i + 1) % loop.size()] - loop[i];
+        if (base1.cross(vec2).norm() > 1e-6) {
+            Eigen::Vector3d base2 = base1.cross(vec2).cross(base1).normalized();
+            Eigen::Matrix<double, 3, 2> basis;
+            basis << base1, base2;
+            return basis;
+        }
+    }
+    assert(false);
+}
+
+Eigen::Vector2d under_basis(const Eigen::Vector3d &vec, const Eigen::Vector3d &origin, const Eigen::Matrix<double, 3, 2> &basis) {
+    return Eigen::Vector2d{(vec - origin).dot(basis.col(0)), (vec - origin).dot(basis.col(1))};
+}
+
+Eigen::Vector3d from_basis(const Eigen::Vector3d &vec, const Eigen::Vector3d &origin, const Eigen::Matrix<double, 3, 2> &basis) {
+    return basis.col(0) * vec(0) + basis.col(1) * vec(1) + origin;
+}
+
+void triangulate(
+    const std::vector<std::vector<Eigen::Vector3d>> &face,
+    std::vector<Eigen::Vector3d> &result) {
+
+    std::vector<std::vector<c2t::Point>> inner;
+    std::vector<c2t::Point> outputTriangles; // Every 3 points is a triangle
+
+    std::vector<c2t::Point> outer;
+
+    Eigen::Vector3d origin            = face[0][0];
+    Eigen::Matrix<double, 3, 2> basis = find_basis(face[0]);
+
+    for (const auto &i : face[0]) {
+        Eigen::Vector2d vec = under_basis(i, origin, basis);
+        outer.emplace_back(vec(0), vec(1));
+    }
+    for (int k = 1; k < face.size(); k++) {
+        std::vector<c2t::Point> inner_loop;
+        for (const auto &i : face[k]) {
+            Eigen::Vector2d vec = under_basis(i, origin, basis);
+            inner_loop.emplace_back(vec(0), vec(1));
+        }
+        inner.emplace_back(std::move(inner_loop));
+    }
+
+    c2t::clip2tri clip2tri;
+    clip2tri.triangulate(inner, outputTriangles, outer);
+
+    for (const auto &i : outputTriangles) {
+        result.emplace_back(from_basis(Eigen::Vector3d(i.x, i.y, 0.0), origin, basis));
+    }
+}
+
+void construct_mesh(std::vector<Eigen::Vector3d> &vertices, Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
+    V.resize(vertices.size(), 3);
+    F.resize(vertices.size() / 3, 3);
+    for (int i = 0; i < vertices.size(); i++) {
+        V.row(i) = vertices[i];
+    }
+    for (int i = 0; i < vertices.size() / 3; i++) {
+        F.row(i) << i * 3, i * 3 + 1, i * 3 + 2;
+    }
+}
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
@@ -87,31 +155,13 @@ int main(int argc, char **argv) {
     }
     auto loops = read_loops(argv[1]);
     auto faces = sweep_faces(loops);
-
-    const Eigen::MatrixXd V = (Eigen::MatrixXd(8, 3) << 0.0, 0.0, 0.0,
-                               0.0, 0.0, 1.0,
-                               0.0, 1.0, 0.0,
-                               0.0, 1.0, 1.0,
-                               1.0, 0.0, 0.0,
-                               1.0, 0.0, 1.0,
-                               1.0, 1.0, 0.0,
-                               1.0, 1.0, 1.0)
-                                  .finished();
-    const Eigen::MatrixXi F = (Eigen::MatrixXi(12, 3) << 1, 7, 5,
-                               1, 3, 7,
-                               1, 4, 3,
-                               1, 2, 4,
-                               3, 8, 7,
-                               3, 4, 8,
-                               5, 7, 8,
-                               5, 8, 6,
-                               1, 5, 6,
-                               1, 6, 2,
-                               2, 6, 8,
-                               2, 8, 4)
-                                  .finished()
-                                  .array() -
-                              1;
+    std::vector<Eigen::Vector3d> vertices;
+    for (const auto &face : faces) {
+        triangulate(face, vertices);
+    }
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+    construct_mesh(vertices, V, F);
 
     // Plot the mesh
     igl::opengl::glfw::Viewer viewer;
