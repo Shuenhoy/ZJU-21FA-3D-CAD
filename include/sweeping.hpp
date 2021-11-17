@@ -80,7 +80,7 @@ struct Sweepping {
         auto [first_v, he] = context.mev(vertices[0], outer->child->vertex, outer);
         Vertex *last_v     = first_v;
         for (int i = 1; i < vertices.size(); i++) {
-            auto [nv, nhe] = context.mev(vertices[i - 1], last_v, outer);
+            auto [nv, nhe] = context.mev(vertices[i], last_v, outer);
             last_v         = nv;
         }
         Loop *nl    = context.kemr(he, outer);

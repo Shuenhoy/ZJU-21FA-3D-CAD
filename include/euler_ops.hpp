@@ -122,6 +122,9 @@ struct EulerContext {
     }
     void kfmrh(Face *f1, Face *f2) {
         HF::linked_insert(f1, f2->child);
+        Face *f2p = f2->prev;
+        Face *f2n = f2->next;
+        HF::connect(f2p, f2n);
         std::unique_ptr<Face> stale_ptr{f2};
         faces.erase(stale_ptr);
         stale_ptr.release();

@@ -29,7 +29,7 @@ struct HalfEdgeStructure {
     struct Vertex;
 
     struct Solid {
-        Face *child;
+        Face *child = nullptr;
 
         template <typename... T>
         static std::unique_ptr<Solid> create(T &&...ts) {
@@ -37,8 +37,8 @@ struct HalfEdgeStructure {
         }
     };
     struct Face {
-        Loop *child;
-        Face *prev, *next;
+        Loop *child = nullptr;
+        Face *prev = nullptr, *next = nullptr;
 
         template <typename... T>
         static std::unique_ptr<Face> create(T &&...ts) {
@@ -46,8 +46,8 @@ struct HalfEdgeStructure {
         }
     };
     struct Loop {
-        HalfEdge *child;
-        Loop *prev, *next;
+        HalfEdge *child = nullptr;
+        Loop *prev = nullptr, *next = nullptr;
 
         template <typename... T>
         static std::unique_ptr<Loop> create(T &&...ts) {
@@ -56,10 +56,10 @@ struct HalfEdgeStructure {
     };
 
     struct HalfEdge {
-        Vertex *vertex;
-        HalfEdge *next;
-        HalfEdge *prev;
-        HalfEdge *twin;
+        Vertex *vertex = nullptr;
+        HalfEdge *next = nullptr;
+        HalfEdge *prev = nullptr;
+        HalfEdge *twin = nullptr;
 
         template <typename... T>
         static std::unique_ptr<HalfEdge> create(T &&...ts) {
@@ -76,7 +76,7 @@ struct HalfEdgeStructure {
         }
     };
     struct Vertex {
-        HalfEdge *edge;
+        HalfEdge *edge = nullptr;
         Vdata data;
 
         Vertex(Vdata data) : data(data) {}
