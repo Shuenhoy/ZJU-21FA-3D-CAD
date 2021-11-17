@@ -56,7 +56,7 @@ CPMAddPackage(
   PATCH_COMMAND git restore . && git apply ${CMAKE_CURRENT_SOURCE_DIR}/exprtk.patch && echo "patch applied"
 )
 
-add_executable(brep_sweep src/main.cpp)
+add_executable(brep_sweep src/main.cpp src/sweep_expr.hpp)
 
 target_link_libraries(brep_sweep 
   PUBLIC
