@@ -58,13 +58,22 @@ auto sweep_faces(auto loops) {
         hf_loops.push_back(inner->child);
         inner_faces.push_back(inner);
     }
-
-    for (int i = 0; i < loops.size(); i++) {
-        Sweeping::sweeping(context, solid, hf_loops[i], Eigen::Vector3d(0.0, 0.0, 1.0));
-    }
     for (int i = 1; i < loops.size(); i++) {
         context.kfmrh(top, inner_faces[i - 1]);
     }
+    auto loop = bot->child;
+    do {
+        Sweeping::sweeping(context, solid, loop, Eigen::Vector3d(0.5, 0.0, 1.0));
+
+        loop = loop->next;
+    } while (loop != bot->child);
+    loop = bot->child;
+    do {
+        Sweeping::sweeping(context, solid, loop, Eigen::Vector3d(0.0, 0.5, 1.0));
+
+        loop = loop->next;
+    } while (loop != bot->child);
+
     auto faces = Sweeping::collect_faces(solid);
     std::cout << "solid with " << faces.size() << " faces" << std::endl;
     for (auto &&face : faces) {
