@@ -15,7 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 CPMAddPackage(
   NAME "clip2tri"
-  GIT_REPOSITORY "https://ghproxy.com/https://github.com/raptor/clip2tri.git"
+  GIT_REPOSITORY "https://github.com/raptor/clip2tri.git"
   GIT_TAG "f62a734d22733814b8a970ed8a68a4d94c24fa5f"
   PATCH_COMMAND git restore . && git apply ${CMAKE_CURRENT_SOURCE_DIR}/clip2tri.patch && echo "patch applied"
   OPTIONS
@@ -34,7 +34,7 @@ CPMAddPackage(
 
 CPMAddPackage(
   NAME "libigl"
-  GIT_REPOSITORY "https://ghproxy.com/https://github.com/libigl/libigl.git"
+  GIT_REPOSITORY "https://github.com/libigl/libigl.git"
   GIT_TAG "v2.3.0"
   OPTIONS
     "LIBIGL_USE_STATIC_LIBRARY OFF"
@@ -49,6 +49,13 @@ CPMAddPackage(
     "LIBIGL_WITH_PYTHON OFF"
 )
 
+CPMAddPackage(
+  NAME "exprtk"
+  GIT_REPOSITORY "https://github.com/ArashPartow/exprtk.git"
+  GIT_TAG "93a9f44f99b910bfe07cd1e933371e83cea3841c"
+  PATCH_COMMAND git restore . && git apply ${CMAKE_CURRENT_SOURCE_DIR}/exprtk.patch && echo "patch applied"
+)
+
 add_executable(brep_sweep src/main.cpp)
 
 target_link_libraries(brep_sweep 
@@ -56,6 +63,7 @@ target_link_libraries(brep_sweep
     Eigen3::Eigen
     igl::core igl::opengl_glfw
     clip2tri-static
+    exprtk
 )
 target_include_directories(brep_sweep PUBLIC include)
 target_precompile_headers(brep_sweep PRIVATE 

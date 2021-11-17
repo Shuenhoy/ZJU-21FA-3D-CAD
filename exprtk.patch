@@ -1,0 +1,30 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+new file mode 100644
+index 0000000..6be05c1
+--- /dev/null
++++ b/CMakeLists.txt
+@@ -0,0 +1,24 @@
++# Minimum required version of CMake
++cmake_minimum_required(VERSION 3.20)
++
++# Set CMake project name
++project(exprtk)
++
++# No creating project files in-source.  Bad, evil things happen
++string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" _insource)
++if (_insource)
++        message(SEND_ERROR "No building in-source.  You must run CMake from the \"build\" directory.")
++        message(FATAL_ERROR "Remove the file CMakeCache.txt in ${CMAKE_SOURCE_DIR} first.")
++endif()
++
++
++add_library(exprtk INTERFACE)
++
++target_include_directories(exprtk 
++    INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
++              $<INSTALL_INTERFACE:include/exprtk>)
++
++# Install header files
++install(FILES exprtk.hpp
++        DESTINATION include/exprtk
++)
