@@ -1,5 +1,5 @@
 set(CPM_DOWNLOAD_VERSION 0.34.0)
-set(CPM_SOURCE_CACHE "$ENV{HOME}/.cache/CPM" CACHE STRING "CPM source cache dir")
+# set(CPM_SOURCE_CACHE "$ENV{HOME}/.cache/CPM" CACHE STRING "CPM source cache dir")
 
 if(CPM_SOURCE_CACHE)
   # Expand relative path. This is important if the provided path contains a tilde (~)

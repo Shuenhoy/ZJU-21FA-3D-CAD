@@ -11,9 +11,19 @@ include(cmake/get_cpm.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+
+
+CPMAddPackage(
+  NAME "clip2tri"
+  GIT_REPOSITORY "https://ghproxy.com/https://github.com/raptor/clip2tri.git"
+  GIT_TAG "f62a734d22733814b8a970ed8a68a4d94c24fa5f"
+  PATCH_COMMAND git restore . && git apply ${CMAKE_CURRENT_SOURCE_DIR}/clip2tri.patch && echo "patch applied"
+  OPTIONS
+    "BUILD_SHARED_LIBS OFF"
+)
 CPMAddPackage(
   NAME "Eigen3"
-  GIT_REPOSITORY "https://gitlab.com/libeigen/eigen.git"
+  GIT_REPOSITORY "https://github.com/hexagon-geo-surv/eigen.git"
   GIT_TAG "3.4"
   OPTIONS
     "BUILD_TESTING OFF"
@@ -24,7 +34,7 @@ CPMAddPackage(
 
 CPMAddPackage(
   NAME "libigl"
-  GIT_REPOSITORY "https://github.com/libigl/libigl.git"
+  GIT_REPOSITORY "https://ghproxy.com/https://github.com/libigl/libigl.git"
   GIT_TAG "v2.3.0"
   OPTIONS
     "LIBIGL_USE_STATIC_LIBRARY OFF"
@@ -38,15 +48,6 @@ CPMAddPackage(
     "LIBIGL_WITH_XML OFF"
     "LIBIGL_WITH_PYTHON OFF"
 )
-
-CPMAddPackage(
-  NAME "clip2tri"
-  GIT_REPOSITORY "https://github.com/raptor/clip2tri.git"
-  GIT_TAG "f62a734d22733814b8a970ed8a68a4d94c24fa5f"
-  OPTIONS
-    "BUILD_SHARED_LIBS OFF"
-)
-
 
 add_executable(brep_sweep src/main.cpp)
 

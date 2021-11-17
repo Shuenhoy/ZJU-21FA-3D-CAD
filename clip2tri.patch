@@ -1,0 +1,26 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e7c6937..e0ee7f7 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -46,6 +46,10 @@ endif(MSVC)
+ if(BUILD_SHARED_LIBS)
+   add_library(clip2tri SHARED clip2tri/clip2tri.cpp)
+   target_link_libraries(clip2tri clipper poly2tri ${M_LIBRARY})
++  target_include_directories(clip2tri 
++    INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
++              $<INSTALL_INTERFACE:include/clip2tri>)
++
+   install(TARGETS clip2tri
+     RUNTIME DESTINATION ${BIN_DIR}
+     LIBRARY DESTINATION ${LIB_DIR}
+@@ -55,6 +59,10 @@ endif(BUILD_SHARED_LIBS)
+ if(BUILD_STATIC_LIBS)
+   add_library(clip2tri-static STATIC clip2tri/clip2tri.cpp)
+   target_link_libraries(clip2tri-static clipper-static poly2tri-static ${M_LIBRARY})
++  target_include_directories(clip2tri-static 
++    INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
++              $<INSTALL_INTERFACE:include/clip2tri>)
++
+   install(TARGETS clip2tri-static
+     RUNTIME DESTINATION ${BIN_DIR}
+     LIBRARY DESTINATION ${LIB_DIR}
