@@ -8,6 +8,8 @@
 #include <Eigen/Core>
 #include <clip2tri/clip2tri.h>
 #include <igl/per_face_normals.h>
+#include <igl/per_corner_normals.h>
+#include <igl/doublearea.h>
 
 namespace brep_sweep {
 inline Eigen::Matrix<double, 3, 2> find_basis(const std::vector<Eigen::Vector3d> &loop) {
@@ -97,9 +99,10 @@ inline void triangulate(
     sub_faces.emplace_back(result.size() / 3);
 }
 
-inline void construct_mesh(std::vector<Eigen::Vector3d> &vertices,
-                           std::vector<Eigen::Vector3i> &faces,
-                           Eigen::MatrixXd &V, Eigen::MatrixXi &F) {
+inline void construct_mesh(const std::vector<Eigen::Vector3d> &vertices,
+                           const std::vector<Eigen::Vector3i> &faces,
+                           const std::vector<int> &sub_faces,
+                           Eigen::MatrixXd &V, Eigen::MatrixXi &F, Eigen::MatrixXd &CN) {
     V.resize(vertices.size(), 3);
     F.resize(faces.size(), 3);
     for (int i = 0; i < vertices.size(); i++) {
@@ -108,6 +111,26 @@ inline void construct_mesh(std::vector<Eigen::Vector3d> &vertices,
     for (int i = 0; i < faces.size(); i++) {
         F.row(i) = faces[i];
     }
+    Eigen::MatrixXd N;
+
+    Eigen::VectorXd areas;
+    igl::per_face_normals(V, F, N);
+    igl::doublearea(V, F, areas);
+
+    int cnt = 0;
+    for (int i = 0; i < sub_faces.size(); i++) {
+        Eigen::Vector3d normals = {0.0, 0.0, 0.0};
+        for (int j = 0; j < sub_faces[i]; j++) {
+            normals += N.row(cnt + j) * areas(cnt + j);
+        }
+        normals.normalize();
+        for (int j = 0; j < sub_faces[i]; j++) {
+            N.row(cnt + j) = normals;
+        }
+        cnt += sub_faces[i];
+    }
+
+    igl::per_corner_normals(V, F, N, 20, CN);
 }
 
 } // namespace brep_sweep
