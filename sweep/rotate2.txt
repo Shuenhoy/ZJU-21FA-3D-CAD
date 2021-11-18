@@ -1,0 +1,6 @@
+var k := (abs(sin(z))+0.5);
+var affine[6] := {
+    k*cos(z), -k*sin(z),
+    k*sin(z), k*cos(z),
+    0.0, 0.0
+}
