@@ -19,7 +19,6 @@ void Sweepping::sweeping(
         he = next;
     } while (he != loop->child);
     assert(old_vertices.size() >= 3);
-    std::cout << old_vertices.size() << std::endl;
     std::vector<Vertex *> new_vertices;
 
     for (auto &v : old_vertices) {
