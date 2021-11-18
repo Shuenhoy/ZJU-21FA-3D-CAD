@@ -74,6 +74,7 @@ auto sweep_faces(auto loops, brep_sweep::Expression &expr, double step_length, s
     }
 
     auto faces = Sweeping::collect_faces(solid);
+#ifdef DEBUG
     std::cout << "solid with " << faces.size() << " faces" << std::endl;
     for (auto &&face : faces) {
         // print loop nums
@@ -86,6 +87,7 @@ auto sweep_faces(auto loops, brep_sweep::Expression &expr, double step_length, s
             std::cout << "-------------" << std::endl;
         }
     }
+#endif
 
     return faces;
 }
