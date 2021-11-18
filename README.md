@@ -66,3 +66,14 @@ var affine[6] := {
 `affine`的前四个元素是平面上的一个线性变换，后两个元素则代表了平面上的平移。`z`可以作为其中的变量使用。每个顶点在第`i`步扫掠的位置`x, y`由上述仿射变换决定，`z`则为`i*扫掠步长`。
 
 在`sweep`文件夹中有若干实例文件。
+
+# Gallery
+![](gallery/0.png)
+![](gallery/1.png)
+![](gallery/2.png)
+![](gallery/3.png)
+![](gallery/4.png)
+![](gallery/5.png)
+![](gallery/6.png)
+![](gallery/7.png)
+![](gallery/8.png)
