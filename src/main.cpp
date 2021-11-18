@@ -8,11 +8,15 @@
 
 #include <iostream>
 #include <fstream>
+#include <unordered_map>
 #include <vector>
 
 #include <Eigen/Core>
 
 #include <igl/opengl/glfw/Viewer.h>
+#include <igl/per_face_normals.h>
+#include <igl/per_corner_normals.h>
+#include <igl/doublearea.h>
 
 using Sweeping = brep_sweep::Sweepping;
 
@@ -117,17 +121,41 @@ int main(int argc, char **argv) {
     auto faces = sweep_faces(loops, sweep_brep, step_length, step);
 
     std::vector<Eigen::Vector3d> vertices;
+    std::vector<Eigen::Vector3i> facesf;
+    std::vector<int> sub_faces;
+
+    std::map<Eigen::Vector3d, int> vertices_map;
+
     for (const auto &face : faces) {
-        brep_sweep::triangulate(face, vertices);
+        brep_sweep::triangulate(face, vertices_map, vertices, facesf, sub_faces);
     }
-    Eigen::MatrixXd V;
+    Eigen::MatrixXd V, N, CN;
     Eigen::MatrixXi F;
-    brep_sweep::construct_mesh(vertices, V, F);
+    brep_sweep::construct_mesh(vertices, facesf, V, F);
+
+    Eigen::VectorXd areas;
+    igl::per_face_normals(V, F, N);
+    igl::doublearea(V, F, areas);
+
+    int cnt = 0;
+    for (int i = 0; i < sub_faces.size(); i++) {
+        Eigen::Vector3d normals = {0.0, 0.0, 0.0};
+        for (int j = 0; j < sub_faces[i]; j++) {
+            normals += N.row(cnt + j) * areas(cnt + j);
+        }
+        normals.normalize();
+        for (int j = 0; j < sub_faces[i]; j++) {
+            N.row(cnt + j) = normals;
+        }
+        cnt += sub_faces[i];
+    }
+
+    igl::per_corner_normals(V, F, N, 20, CN);
 
     // Plot the mesh
     igl::opengl::glfw::Viewer viewer;
     viewer.data().set_mesh(V, F);
-    viewer.data().set_face_based(true);
+    viewer.data().set_normals(CN);
     viewer.launch();
 
     return 0;
